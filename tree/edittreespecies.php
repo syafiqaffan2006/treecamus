@@ -1,0 +1,114 @@
+<?php
+ob_start(); // Turn on output buffering to prevent header errors
+
+$current_page = 'treespecies';
+include_once '../connection/connection.php';
+include_once '../function/function.php';
+include_once '../settings/settings.php';
+
+session_start();
+
+if (!isset($_SESSION['login_id']) && !isset($_SESSION['user_id'])) {
+    header("Location: /treecamus/index.php");
+    exit();
+}
+
+if (isset($_GET['id'])) {
+    if (checktreeSpeciesRecord($dbh, trim($_GET['id'])) == true) {
+        $token = trim($_GET['id']);
+    } else {
+        header("Location: /treecamus/logout");
+        exit();
+    }
+} else {
+    header("Location: /treecamus/tree/species");
+    exit();
+}
+
+// Handle form submission BEFORE rendering HTML or includes
+if (isset($_POST['save'])) {
+    $familyID = $_POST['familyid'];
+    $speciestitle = addslashes($_POST['speciesName']);
+    $specieslocalname = addslashes($_POST['specieslocalname']);
+    $is_display = $_POST['isallowed'];
+
+    updatetreeSpecies($dbh, $familyID, $speciestitle, $specieslocalname, $is_display, $token);
+
+    header("Location: /treecamus/tree/species?editsuccess");
+    exit();
+}
+
+// Load headers only when NOT redirecting
+include '../includes/header.php';
+include '../includes/menu.php';
+?>
+
+<script src="/treecamus/plugins/select2/js/select2.full.min.js"></script>
+<style>
+  .select2-container .select2-selection--single {
+      height: 42px !important; border-radius: 0.75rem !important;
+      display: flex; align-items: center;
+  }
+</style>
+
+<header class="flex justify-between items-center mb-8 flex-wrap gap-4">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight">Edit Tree Species</h1>
+    </div>
+    <div class="flex items-center gap-2 bg-white/70 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 px-4 py-2 rounded-full text-xs text-slate-500 dark:text-slate-400">
+        <a href="/treecamus/dashboard" class="hover:text-emerald-500">Home</a><span>/</span>
+        <a href="/treecamus/tree/species" class="hover:text-emerald-500">List Of Tree Species</a><span>/</span>
+        <span class="text-slate-800 dark:text-white font-medium">Edit Tree Species</span>
+    </div>
+</header>
+
+<div class="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden max-w-2xl">
+    <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-4">
+        <h2 class="text-white font-bold text-lg">Edit Tree Species</h2>
+    </div>
+
+    <form role="form" name="editTreeSpecies" method="post" action="/treecamus/tree/species/edit/<?php echo htmlspecialchars($token); ?>" enctype="multipart/form-data" autocomplete="off" class="p-6 space-y-5">
+        <div>
+            <label for="familyid" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Family</label>
+            <select name="familyid" id="familyid" class="select2 w-full" required style="width:100%">
+                <option value="">Choose One</option>
+                <?php getSelectedTreeName($dbh, $token); ?>
+            </select>
+        </div>
+        <div>
+            <label for="speciesName" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Species/Scientific Name</label>
+            <input type="text" name="speciesName" id="speciesName" required value="<?php echo htmlspecialchars(stripslashes(getSpeciestreeTitle($dbh, $token))); ?>"
+                class="w-full rounded-xl bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 px-3 py-2.5 text-sm text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+        </div>
+        <div>
+            <label for="specieslocalname" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Local Name</label>
+            <input type="text" name="specieslocalname" id="specieslocalname" value="<?php echo htmlspecialchars(stripslashes(getSpeciesLocalName($dbh, $token))); ?>"
+                class="w-full rounded-xl bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 px-3 py-2.5 text-sm text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Is Displayed?</label>
+            <div class="flex flex-col gap-2">
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="radio" name="isallowed" value="1" class="accent-emerald-500" <?php if (getisDisplaySpecies($dbh, $token) == 1) echo 'checked'; ?>>
+                    Yes, display on the system
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="radio" name="isallowed" value="0" class="accent-red-500" <?php if (getisDisplaySpecies($dbh, $token) == 0) echo 'checked'; ?>>
+                    No, hide from display on the system
+                </label>
+            </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+            <button type="submit" name="save" class="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:opacity-90 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all">Save</button>
+            <button type="button" onclick='window.location="/treecamus/tree/species";' class="border border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-300 text-sm px-5 py-2.5 rounded-xl hover:bg-white/5">Cancel</button>
+        </div>
+    </form>
+</div>
+
+<script>
+  $(function () { $('.select2').select2({ minimumInputLength: 0 }); });
+</script>
+
+<?php include '../includes/footer.php'; ?>
