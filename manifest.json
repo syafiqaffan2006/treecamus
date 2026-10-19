@@ -1,0 +1,22 @@
+{
+    "name": "Tree-CaMUs UITM",
+    "short_name": "Tree-CaMUs",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#fff",
+    "description": "Tree-CaMUs App.",
+    "theme_color": "red",
+    "icons": [
+      {
+        "src": "images/ugc-logo.png",
+        "type": "image/png",
+        "sizes": "400x400"
+      },
+      {
+        "src":"images/ugc-logo.png",
+        "sizes":"400x400",
+        "type":"image/png"
+        }
+    ]
+  }
+  
